@@ -20,7 +20,7 @@ and demonstrate a few interesting ideas.
 
 ### Notes and Next Steps
 
-This project was a lot of fun. Vue.js is pretty powerful and a blast to work with.
+This project was a lot of fun. Vue.js is pretty powerful and a blast to work with. VS Code is a decent code editor too, although I barely scratched the surface.
 
 Here are some areas I'd consider focusing on next:
 
