@@ -1,0 +1,203 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Vue Pizza Builder - BETA</title>
+
+  <link rel="stylesheet" href="css/modal.css">
+  <link rel="stylesheet" href="node_modules/bootstrap/dist/css/bootstrap.min.css">
+</head>
+<body>
+  <!-- navigation bar -->
+  <nav class="navbar navbar-default">
+    <div class="container-fluid">
+      <a class="navbar-brand"><i class="glyphicon glyphicon-heart"></i> Vue.js Pizza Builder - BETA</a>
+    </div>
+  </nav>
+
+  <!-- main body of app -->
+  <div class="container" id="pizzas">
+    <div class="col-sm-4">
+		<div class="panel panel-default">
+			<div class="panel-heading">
+				<button class="btn btn-default pull-right" @click="toggleInstructions">
+					<i class="glyphicon" 
+						:class="this.showInstructions ? 'glyphicon-collapse-up' : 'glyphicon-collapse-down'">
+					</i> {{ this.showInstructions ? 'Hide' : 'Show' }}
+				</button>
+				<h4>Getting Started</h4>
+			</div>
+			<div class="panel-body" v-show="showInstructions">
+				<h5><strong>Welcome to Your Pizza Builder Experience&#153;</strong></h5>
+				<p>
+					<em>Because the world just needs easier, better, more fun ways to design pizzas!</em>
+				</p>
+				<p>
+					<strong>Here's what you can do:</strong>
+				</p>
+				<ul>
+					<li>Create new pizzas and toppings using the panels below.</li>
+					<li>Add toppings to the existing pizzas using middle and right panels.</li>
+					<li>Filter (search) existing pizzas and available toppings.</li>
+				</ul>
+				<p>
+					Please make sure to check out the <a href="https://github.com/mparrett/pizzabuilder-client">README</a> for more information!
+				</p>
+			</div>
+		</div>
+		
+		<!-- add new pizza form -->
+		<div class="panel panel-default">
+			<div class="panel-heading">
+				<h4>Create a new Pizza</h4>
+			</div>
+			<div class="panel-body">
+				<form>
+					<div class="form-group">
+						<input class="form-control" placeholder="Pizza Name" v-model="newPizza.name">
+					</div>
+					<div class="form-group">
+						<textarea class="form-control" placeholder="Pizza Description" v-model="newPizza.description"></textarea>
+					</div>
+					<div class="alert" :class="validPizza ? 'alert-success' : 'alert-danger'" v-show="!validPizza && newPizza.name != ''">
+						{{ validPizza ? 'Looks good!' : 'Name and description must be at least 4 characters.' }}
+					</div>
+					<div class="alert" :class="!uniqueName ? 'alert-warning' : 'alert-success'" v-show="!uniqueName">
+						<i class="glyphicon glyphicon-exclamation-sign"></i> Warning: There are other pizzas with this name.
+					</div>
+					<button class="btn btn-success pull-right" v-on:click="addPizza" :disabled="validPizza ? false : 'disabled'"><i class="glyphicon glyphicon-plus"></i> Add</button>
+				</form>
+			</div>
+			<div class="panel-body">
+				<div class="alert alert-success alert-dismissible" role="alert" v-show="showPizzaSuccess">
+					<button type="button" class="close" @click="showPizzaSuccess = false"><span aria-hidden="true">&times;</span></button>
+					<strong>Success!</strong> Use the panel to the right to add toppings.
+				</div>				
+			</div>
+		</div>
+		
+		<!-- add topping -->
+		<div class="panel panel-default">
+			<div class="panel-heading">
+				<h4>Create a new Topping</h4>
+			</div>
+			<div class="panel-body">
+				<form class="form-inline">
+					<div class="form-group">
+						<input class="form-control" placeholder="Topping Name" v-model="newTopping.name">
+					</div>
+					<div class="form-group">
+						<button class="btn btn-success" v-on:click="addTopping" :disabled="validTopping ? false : 'disabled'"><i class="glyphicon glyphicon-plus"></i> Add</button>
+					</div>
+				</form>
+			</div>
+			<div class="panel-body">
+				<div class="alert" :class="validTopping ? 'alert-success' : 'alert-danger'" v-show="!validTopping && newTopping.name != ''">
+					{{ validTopping ? 'Looks good!' : 'Topping must be at least 2 characters.' }}
+				</div>
+			</div>
+			<div class="panel-body">
+				<div class="alert alert-success alert-dismissible" role="alert" v-show="showToppingSuccess">
+					<button type="button" class="close" @click="showToppingSuccess = false"><span aria-hidden="true">&times;</span></button>
+					<strong>Success!</strong> Select a pizza and bless it with your new topping!
+				</div>				
+			</div>			
+		</div>	
+    </div>
+
+    <!-- existing pizzas -->
+    <div class="col-sm-4">
+		<div class="panel panel-default">
+			<div class="panel-heading">
+				<h4>Pizzas</h4>
+			</div>
+			<div class="panel-body">
+				<form class="form-inline">
+					<div class="form-group">
+						<input class="form-control" type="text" v-model="searchPizzas" name="pizzaFilter" placeholder="Type to filter pizzas"></input>
+					</div>
+					<div class="form-group">
+						<button class="btn btn-default btn-danger" @click="searchPizzas = ''"><i class="glyphicon glyphicon-remove"></i></button>
+					</div>
+				</form>
+			</div>
+			<div class="list-group">
+				<a href="#" class="list-group-item" v-for="pizza in pizzas | filterBy searchPizzas | orderBy 'id' 1" @click="getPizzaToppings(pizza.id)">
+					<h4 class="list-group-item-heading">
+						#{{ pizza.id }} - {{ pizza.name }}
+					</h4>
+					<p class="list-group-item-text" v-if="pizza.description">{{ pizza.description }}</p>
+				</a>
+			</div>
+		</div>
+    </div>
+
+	<!-- selected pizza -->
+    <div class="col-sm-4">
+		<div class="panel panel-default panel-primary" v-show="selectedPizza.name != ''">
+			<div class="panel-heading">
+				<button class="btn btn-default pull-right" @click="selectedPizza.name =''"><i class="glyphicon glyphicon-remove"></i></button>
+				<h4>Modify #{{ selectedPizza.id }} - {{ selectedPizza.name }}</h4>
+			</div>
+			<div class="panel-body">
+				<h4>Toppings</h4>
+				<p v-show="selectedPizza.toppings.length == 0">No toppings! Consider adding some...</p>
+			</div>
+			<div class="list-group">
+				<a href="#" class="list-group-item" v-for="topping in selectedPizza.toppings">
+					<h4 class="list-group-item-heading">
+						#{{ topping.id }} - {{ topping.name }}
+					</h4>
+				</a>
+			</div>
+			<div class="panel-body">
+				<div class="list-group">
+					<form class="form-inline">
+						<div class="form-group">
+							<select v-model="addToppingSelected" class="form-control">
+								<option v-for="(index, topping) in toppings" :value="index">
+									#{{ topping.id }} - {{ topping.name | truncate 18 }}
+								</option>
+							</select>
+						</div>
+						<div class="form-group">
+							<button class="btn btn-success" @click="addToppingToPizza"><i class="glyphicon glyphicon-plus"></i> Add</button>
+						</div>
+					</form>
+				</div>
+			</div>						
+		</div>
+		<!-- toppings list -->
+		<div class="panel panel-default">
+			<div class="panel-heading">
+				<h4>Toppings</h4>
+			</div>
+			<div class="panel-body">
+				<form class="form-inline">
+					<div class="form-group">
+						<input class="form-control" type="text" v-model="searchToppings" name="toppingFilter" placeholder="Type to filter toppings"></input>
+					</div>
+					<div class="form-group">
+						<button class="btn btn-default btn-danger" @click="searchToppings = ''"><i class="glyphicon glyphicon-remove"></i></button>
+					</div>
+				</form>
+			</div>
+			<div class="list-group">
+				<a href="#" class="list-group-item" v-for="topping in toppings | filterBy searchToppings">
+					<h4 class="list-group-item-heading">
+						#{{ topping.id }} - {{ topping.name }}
+					</h4>
+					<p class="list-group-item-text" v-if="topping.description">{{ topping.description }}</p>
+				</a>
+			</div>
+		</div>
+    </div>
+	
+	</div> <!-- container -->
+	
+	<script src="node_modules/vue/dist/vue.js"></script>
+	<script src="node_modules/vue-resource/dist/vue-resource.js"></script>
+	<script src="js/app.js"></script>
+
+</body>
+</html>

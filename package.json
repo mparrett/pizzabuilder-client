@@ -1,0 +1,8 @@
+{
+  "private": true,
+  "dependencies": {
+    "vue": "^1.0.0",
+    "vue-resource": "^0.7.0",
+    "bootstrap": "^3.3.6"
+  }
+}
